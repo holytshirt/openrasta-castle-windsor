@@ -46,11 +46,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\openrasta-core.2.5.7\lib\net40\OpenRasta.dll</HintPath>
     </Reference>
-    <Reference Include="OpenRasta.Testing">
-      <HintPath>..\..\lib\openrasta-testing\OpenRasta.Testing.dll</HintPath>
+    <Reference Include="OpenRasta.Testing, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\openrasta-core\src\OpenRasta.Tests.Unit\bin\Debug\OpenRasta.Testing.dll</HintPath>
     </Reference>
-    <Reference Include="OpenRasta.Tests.Unit">
-      <HintPath>..\..\lib\openrasta-testing-unit\OpenRasta.Tests.Unit.dll</HintPath>
+    <Reference Include="OpenRasta.Tests.Unit, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\openrasta-core\src\OpenRasta.Tests.Unit\bin\Debug\OpenRasta.Tests.Unit.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

@@ -55,6 +55,8 @@
     <Compile Include="ContextStoreInstanceActivator.cs" />
     <Compile Include="ContextStoreLifetime.cs" />
     <Compile Include="Convert.cs" />
+    <Compile Include="OpenRastaLifetimeScope.cs" />
+    <Compile Include="OpenRastaScopeAccessor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WindsorDependencyResolver.cs" />
   </ItemGroup>

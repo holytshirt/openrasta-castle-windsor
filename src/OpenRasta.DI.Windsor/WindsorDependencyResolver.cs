@@ -53,7 +53,18 @@ namespace OpenRasta.DI.Windsor
 
         protected override object ResolveCore(Type serviceType)
         {
-            return _windsorContainer.Resolve(serviceType);
+            var handler = _windsorContainer.Kernel.GetHandler(serviceType);
+
+            if (handler.ComponentModel.ExtendedProperties[Constants.REG_IS_INSTANCE_KEY] != null)
+            {
+                throw new DependencyResolutionException("Cannot find the instance in the context store.");
+            }
+
+
+
+            var resolveCore = _windsorContainer.Resolve(serviceType);
+
+            return resolveCore;
         }
 
         protected override IEnumerable<TService> ResolveAllCore<TService>()
@@ -83,7 +94,8 @@ namespace OpenRasta.DI.Windsor
                 }
                 else
                 {
-                    _windsorContainer.Register(Component.For(dependent).Named(componentName).ImplementedBy(concrete).LifeStyle.Custom(typeof(ContextStoreLifetime)));
+                   // _windsorContainer.Register(Component.For(dependent).Named(componentName).ImplementedBy(concrete).LifeStyle.Custom(typeof(ContextStoreLifetime)));
+                    _windsorContainer.Register(Component.For(dependent).Named(componentName).ImplementedBy(concrete).LifestyleScoped<OpenRastaScopeAccessor>());
                 }
             }
         }
@@ -95,41 +107,66 @@ namespace OpenRasta.DI.Windsor
             switch (lifetime)
             {
                 case DependencyLifetime.PerRequest:
+                {
+                    if (_windsorContainer.Kernel.HasComponent(serviceType))
                     {
-                        var store = (IContextStore)Resolve(typeof(IContextStore));
-                        // try to see if we have a registration already
-                        if (_windsorContainer.Kernel.HasComponent(serviceType))
+                        var handler = _windsorContainer.Kernel.GetHandler(serviceType);
+                        if (handler.ComponentModel.ExtendedProperties[Constants.REG_IS_INSTANCE_KEY] != null)
                         {
-                            var handler = _windsorContainer.Kernel.GetHandler(serviceType);
-                            if (handler.ComponentModel.ExtendedProperties[Constants.REG_IS_INSTANCE_KEY] != null)
-                            {
-                                // if there's already an instance registration we update the store with the correct reg.
-                                store[handler.ComponentModel.Name] = instance;
-                            }
-                            else
-                            {
-                                throw new DependencyResolutionException("Cannot register an instance for a type already registered");
-                            }
+                            _windsorContainer.Register(Component.For(serviceType).Instance(instance).Named(key).LifestyleScoped<OpenRastaScopeAccessor>().ExtendedProperties(new Property(Constants.REG_IS_INSTANCE_KEY, true)));
                         }
                         else
                         {
-                            lock (ContainerLock)
-                            {
-                                if (_windsorContainer.Kernel.HasComponent(serviceType) == false)
-                                {
-                                    _windsorContainer.Register(
-                                        Component.For(serviceType)
-                                                 .Activator<ContextStoreInstanceActivator>()
-                                                 .LifestyleCustom<ContextStoreLifetime>()
-                                                 .ImplementedBy(instance.GetType())
-                                                 .Named(key)
-                                                 .ExtendedProperties(new Property(Constants.REG_IS_INSTANCE_KEY, true))
-                                                 );
-                                    store[key] = instance;
-                                }
-                            }
+                            throw new DependencyResolutionException("Cannot register an instance for a type already registered");
                         }
                     }
+                    else
+                    {
+                        lock (ContainerLock)
+                        {
+                            if (_windsorContainer.Kernel.HasComponent(serviceType) == false)
+                            {
+                                _windsorContainer.Register(Component.For(serviceType).Instance(instance).Named(key).LifestyleScoped<OpenRastaScopeAccessor>().ExtendedProperties(new Property(Constants.REG_IS_INSTANCE_KEY, true)));
+                            }
+                        }
+                        
+                    }
+
+
+                    //var store = (IContextStore)Resolve(typeof(IContextStore));
+                    //// try to see if we have a registration already
+                    //if (_windsorContainer.Kernel.HasComponent(serviceType))
+                    //{
+                    //    var handler = _windsorContainer.Kernel.GetHandler(serviceType);
+                    //    if (handler.ComponentModel.ExtendedProperties[Constants.REG_IS_INSTANCE_KEY] != null)
+                    //    {
+                    //        // if there's already an instance registration we update the store with the correct reg.
+                    //        store[handler.ComponentModel.Name] = instance;
+                    //    }
+                    //    else
+                    //    {
+                    //        throw new DependencyResolutionException("Cannot register an instance for a type already registered");
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    lock (ContainerLock)
+                    //    {
+                    //        if (_windsorContainer.Kernel.HasComponent(serviceType) == false)
+                    //        {
+                    //            _windsorContainer.Register(
+                    //                Component.For(serviceType)
+                    //                         .Activator<ContextStoreInstanceActivator>()
+                    //                         .LifestyleCustom<ContextStoreLifetime>()
+                    //                         .ImplementedBy(instance.GetType())
+                    //                         .Named(key)
+                    //                         .ExtendedProperties(new Property(Constants.REG_IS_INSTANCE_KEY, true))
+                    //                         );
+                    //            store[key] = instance;
+                    //        }
+                    //    }
+                    //}
+                }
                     break;
                 case DependencyLifetime.Singleton:
                     lock (ContainerLock)
@@ -155,22 +192,27 @@ namespace OpenRasta.DI.Windsor
 
         bool IsAvailable(ComponentModel component)
         {
-            bool isWebInstance = IsWebInstance(component);
-            if (isWebInstance)
-            {
-                if (component.Name == null || !HasDependency(typeof (IContextStore))) return false;
-                var store = _windsorContainer.Resolve<IContextStore>();
-                bool isInstanceAvailable = store[component.Name] != null;
-                return isInstanceAvailable;
-            }
-            return true;
+            return _windsorContainer.Kernel.HasComponent(component.Name);
+
+            //bool isWebInstance = IsWebInstance(component);
+            //if (isWebInstance)
+            //{
+            //    if (component.Name == null || !HasDependency(typeof (IContextStore))) return false;
+            //    var store = _windsorContainer.Resolve<IContextStore>();
+            //    bool isInstanceAvailable = store[component.Name] != null;
+
+            //    _windsorContainer.
+
+            //    return isInstanceAvailable;
+            //}
+            //return true;
         }
 
-        static bool IsWebInstance(ComponentModel component)
-        {
-            return typeof (ContextStoreLifetime).IsAssignableFrom(component.CustomLifestyle)
-                   && component.ExtendedProperties[Constants.REG_IS_INSTANCE_KEY] != null;
-        }
+        //static bool IsWebInstance(ComponentModel component)
+        //{
+        //    return typeof (ContextStoreLifetime).IsAssignableFrom(component.CustomLifestyle)
+        //           && component.ExtendedProperties[Constants.REG_IS_INSTANCE_KEY] != null;
+        //}
     }
 }
 

@@ -5,6 +5,7 @@ using Castle.MicroKernel;
 using Castle.MicroKernel.ComponentActivator;
 using Castle.MicroKernel.Context;
 
+using OpenRasta.DI.Internal;
 using OpenRasta.Pipeline;
 
 namespace OpenRasta.DI.Windsor
